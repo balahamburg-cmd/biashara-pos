@@ -3,7 +3,8 @@
 import { PGlite } from "@electric-sql/pglite";
 import fs from "fs";
 const db = new PGlite();
-const sql = fs.readFileSync(new URL("../migrations/0001_init.sql", import.meta.url), "utf8");
+const dir = new URL("../migrations/", import.meta.url);
+const sql = fs.readdirSync(dir).filter((f) => f.endsWith(".sql")).sort().map((f) => fs.readFileSync(new URL(f, dir), "utf8")).join("\n");
 await db.exec(`
 create schema auth;
 create table auth.users(id uuid primary key);
@@ -49,5 +50,6 @@ await t("outsider cannot record sale", ()=>expectErr(as(X,`select * from record_
 await t("outsider cannot pay", ()=>expectErr(as(X,"select add_payment($1,'cash',1)",[S2]),/Not allowed/));
 await t("customer_stats", async()=>{ const c=(await as(C,"insert into customers(business_id,name) values($1,'Joe') returning id",[B])).rows[0].id; await as(C,`select * from record_sale($1,$2::jsonb,'[]'::jsonb,$3)`,[B,JSON.stringify([{product_id:P2,qty:1}]),c]); const r=(await as(C,"select * from customer_stats where customer_id=$1",[c])).rows[0]; if(r.visits!==1||Number(r.owed)!==150) throw new Error(JSON.stringify(r)); });
 await t("manager-level: owner cannot be deactivated by cashier", async()=>{ await as(C,"update members set active=false where user_id=$1",[O]); const r=(await db.query("select active from members where user_id=$1",[O])).rows[0]; if(!r.active) throw new Error("deactivated"); });
+await t("barcodes are unique per business", async()=>{ await as(O,"update products set barcode='6161101600014' where id=$1",[P1]); await expectErr(as(O,"update products set barcode='6161101600014' where id=$1",[P2]),/duplicate/); await as(O,"update products set barcode='' where id=$1",[P2]); });
 console.log(`${ok} passed, ${bad} failed`);
 process.exit(bad ? 1 : 0);

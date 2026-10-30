@@ -7,6 +7,7 @@ import { DateInput, Table, Tabs, Tile } from "@/components/ui";
 import { fetchSale, usePending, useSales } from "@/components/useSales";
 import { ReceiptModal } from "@/components/receipt";
 import { PayModal } from "@/components/pay";
+import { useScanner } from "@/components/useScanner";
 import { kes, niceDate, num, time, today } from "@/lib/format";
 import { balanceOf, itemsAgg, paidOf, payLabel, statusOf, statusText } from "@/lib/sales";
 import type { Sale } from "@/lib/types";
@@ -128,6 +129,14 @@ function Pos({ day, onSold }: { day: string; onSold: (saleId: string, promptPhon
     const p = products.find((x) => x.id === pid)!;
     setCart((c) => c.some((l) => l.pid === pid) ? c.map((l) => l.pid === pid ? { ...l, qty: l.qty + 1 } : l) : [...c, { pid, name: p.name, price: p.sell_price, qty: 1 }]);
   };
+  const byBarcode = (code: string) => products.find((p) => p.barcode && p.barcode === code.trim());
+  useScanner((code) => {
+    const p = byBarcode(code);
+    if (!p) return toast(`No product has barcode ${code}. Add it to a product under Stock.`);
+    if (!p.listed) return toast(`${p.name} is hidden from the menu. Show it under Stock first.`);
+    add(p.id);
+    setQ("");
+  });
   const bump = (i: number, d: number) => setCart((c) => c.map((l, j) => j === i ? { ...l, qty: l.qty + d } : l).filter((l) => l.qty > 0));
 
   const blocked = !cart.length || busy || (pay === "later" && !cust) || (pay === "prompt" && !phone.trim());
@@ -164,7 +173,12 @@ function Pos({ day, onSold }: { day: string; onSold: (saleId: string, promptPhon
   return (
     <div className="pos">
       <div className="panel">
-        <div className="row"><input type="search" id="f-q" placeholder="Search items…" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: "1 1 200px" }} aria-label="Search items" /></div>
+        <div className="row"><input type="search" id="f-q" placeholder="Search or scan a barcode…" value={q} onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            const p = byBarcode(q) ?? (list.length === 1 ? list[0] : undefined);
+            if (p) { add(p.id); setQ(""); }
+          }} style={{ flex: "1 1 200px" }} aria-label="Search items" /></div>
         <div className="row" style={{ marginTop: 10 }}>
           {cats.map((c) => <button key={c} className="chip" aria-pressed={cat === c} onClick={() => setCat(c)}>{c}</button>)}
         </div>

@@ -2,7 +2,7 @@
 
 A point-of-sale and back office for small cafés, bars, grills and shops in Kenya. It runs in the browser on a phone, tablet or computer.
 
-- **Sales**: tap items, then take payment by M-Pesa prompt (STK push), M-Pesa received to the till, cash, split, or pay later. Receipts print on a 58 mm Bluetooth thermal printer.
+- **Sales**: tap items or scan barcodes with a Bluetooth/USB scanner, then take payment by M-Pesa prompt (STK push), M-Pesa received to the till, cash, split, or pay later. Receipts print on a 58 mm Bluetooth thermal printer.
 - **Stock**: opening, added, removed, sold and closing stock for every day, with buying and selling prices and margins.
 - **Customers**: regulars, what they have paid and what they still owe.
 - **Expenses**: one-off and monthly costs, paid or pending.
@@ -30,7 +30,7 @@ These rules are enforced by the database (row level security in `supabase/migrat
 ### 1. Supabase (database and logins)
 
 1. Create a free project at [supabase.com](https://supabase.com). Pick the region closest to Kenya (for example `eu-central-1` or `af-south-1` if offered).
-2. Open **SQL Editor**, paste the whole of `supabase/migrations/0001_init.sql` and click **Run**.
+2. Open **SQL Editor** and run each file in `supabase/migrations/` in order (`0001_init.sql`, then `0002_barcodes.sql`): paste it and click **Run**.
 3. Open **Authentication → Sign In / Providers → Email**. If you want owners to sign up without confirming their email, turn off **Confirm email**.
 4. Open **Project Settings → API** and copy the **Project URL**, the **anon public** key and the **service_role** key.
 
@@ -58,7 +58,16 @@ Without these settings the app still works. Cashiers just record M-Pesa payments
 
 Safaricom calls `/api/mpesa/callback` when the customer accepts or cancels. Each callback address carries a secret token, and a payment is only added once per prompt.
 
-### 4. Receipt printer
+### 4. Barcode scanner (optional)
+
+Any Bluetooth or USB barcode scanner that works as a keyboard will do; most cheap ones do out of the box. Pair it with the phone, tablet or computer.
+
+- To give a product a barcode: **Stock → Products & prices → Edit**, click the Barcode box and scan the item.
+- To sell: on **Sales**, just scan. The item is added to the order, without clicking anything first.
+
+If you already ran `0001_init.sql`, also run `supabase/migrations/0002_barcodes.sql` in the Supabase SQL Editor.
+
+### 5. Receipt printer
 
 Use a 58 mm Bluetooth (BLE) ESC/POS thermal printer. Open the app in **Chrome on Android** (or Chrome/Edge on a computer), go to **Settings → Connect printer**, and pick the printer. iPhones and iPads cannot print this way because Safari has no Web Bluetooth. On those, use Copy and the printer maker's app.
 
