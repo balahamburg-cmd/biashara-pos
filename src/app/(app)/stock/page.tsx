@@ -63,7 +63,7 @@ export default function StockPage() {
         <Table head={[["Name"], ["Category"], ["Buy", "n"], ["Sell", "n"], ["Margin", "n"], ["On menu"], [""]]} empty="No products yet.">
           {products.map((p) => (
             <tr key={p.id}>
-              <td>{p.name}</td><td>{p.category}</td>
+              <td>{p.name}{p.barcode && <div className="muted num" style={{ fontSize: 12 }}>{p.barcode}</div>}</td><td>{p.category}</td>
               <td className="n">{p.buy_price ? num(p.buy_price) : <span style={{ color: "var(--warn)" }}>Not set</span>}</td>
               <td className="n">{num(p.sell_price)}</td>
               <td className="n">{p.buy_price && p.sell_price ? <>{num(p.sell_price - p.buy_price)} <span className="muted">({Math.round(((p.sell_price - p.buy_price) / p.sell_price) * 100)}%)</span></> : "–"}</td>
@@ -81,16 +81,16 @@ export default function StockPage() {
 
 function ProductForm({ p, onClose }: { p: Product | null; onClose: () => void }) {
   const { supabase, business, products, reload, toast } = useBiz();
-  const { v, bind } = useForm({ name: p?.name ?? "", category: p?.category ?? "", sell: p ? String(p.sell_price) : "", buy: p?.buy_price ? String(p.buy_price) : "", qty: "0" });
+  const { v, bind } = useForm({ barcode: p?.barcode ?? "", name: p?.name ?? "", category: p?.category ?? "", sell: p ? String(p.sell_price) : "", buy: p?.buy_price ? String(p.buy_price) : "", qty: "0" });
   const [error, setError] = useState("");
   const cats = Array.from(new Set(products.map((x) => x.category)));
 
   async function save(e?: React.FormEvent) {
     e?.preventDefault();
     if (!v.name.trim() || !v.category.trim() || v.sell === "") return setError("Fill in the name, category and selling price.");
-    const body = { name: v.name.trim(), category: v.category.trim(), sell_price: Number(v.sell), buy_price: Number(v.buy) || 0 };
+    const body = { name: v.name.trim(), category: v.category.trim(), sell_price: Number(v.sell), buy_price: Number(v.buy) || 0, barcode: v.barcode.trim() };
     const res = p ? await supabase.from("products").update(body).eq("id", p.id).select().single() : await supabase.from("products").insert({ ...body, business_id: business.id }).select().single();
-    if (res.error) return setError(res.error.message);
+    if (res.error) return setError(/products_business_barcode_idx/.test(res.error.message) ? "Another product already has this barcode." : res.error.message);
     const q = parseInt(v.qty) || 0;
     if (!p && q > 0) {
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,6 +114,7 @@ function ProductForm({ p, onClose }: { p: Product | null; onClose: () => void })
       <button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" onClick={() => save()}>Save</button>
     </>}>
       <form className="form" onSubmit={save}>
+        <label className="f full">Barcode (optional)<input id="p-barcode" {...bind("barcode")} placeholder="Click here and scan the item" onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} /></label>
         <label className="f full">Name<input id="p-name" {...bind("name")} required /></label>
         <label className="f">Category<input id="p-cat" list="catlist" {...bind("category")} required /><datalist id="catlist">{cats.map((c) => <option key={c} value={c} />)}</datalist></label>
         <label className="f">Selling price (KES)<input id="p-sell" type="number" min={0} step="any" {...bind("sell")} required /></label>

@@ -2,7 +2,7 @@ export type Role = "owner" | "manager" | "cashier" | "waiter";
 
 export type Business = { id: string; name: string; location: string; phone: string; till: string; footer: string };
 export type Member = { business_id: string; user_id: string; role: Role; name: string; phone: string; id_number: string; active: boolean };
-export type Product = { id: string; name: string; category: string; buy_price: number; sell_price: number; listed: boolean };
+export type Product = { id: string; name: string; category: string; buy_price: number; sell_price: number; listed: boolean; barcode: string };
 export type StockMove = { id: string; product_id: string; kind: "add" | "remove"; qty: number; day: string; note: string };
 export type Customer = { id: string; name: string; phone: string; address: string };
 export type SaleItem = { id: string; sale_id: string; product_id: string | null; name: string; qty: number; price: number; buy_price: number };
