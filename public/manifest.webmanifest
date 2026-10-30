@@ -1,0 +1,9 @@
+{
+  "name": "Biashara POS",
+  "short_name": "Biashara",
+  "start_url": "/sales",
+  "display": "standalone",
+  "background_color": "#f3f5f1",
+  "theme_color": "#0d7a4c",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
